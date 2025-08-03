@@ -1,75 +1,125 @@
-import { useState } from 'react';
+import { Bell, Search, Settings, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
+import logoPath from "@assets/image_1754216364556.png";
 
-export default function Header() {
-  const [searchQuery, setSearchQuery] = useState('');
+interface HeaderProps {
+  onSearchChange?: (search: string) => void;
+}
 
-  const { data: notifications } = useQuery({
+export function Header({ onSearchChange }: HeaderProps) {
+  const { user } = useAuth();
+  const { data: notifications = [] } = useQuery({
     queryKey: ["/api/notifications"],
   });
 
-  const unreadCount = notifications?.filter((n: any) => !n.isRead).length || 0;
-
-  const currentDate = new Date().toLocaleDateString('id-ID', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-
-  const handleAddUser = () => {
-    // TODO: Implement add user functionality
-    console.log('Add user clicked');
-  };
+  const unreadCount = notifications.filter((n: any) => !n.isRead).length;
 
   return (
-    <header className="bg-white border-b border-slate-200 shadow-sm">
-      <div className="flex items-center justify-between px-6 py-4">
-        <div className="flex items-center space-x-4">
-          <button className="md:hidden p-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors">
-            <i className="fas fa-bars text-lg"></i>
-          </button>
+    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+      <div className="flex items-center justify-between">
+        {/* Logo and Title */}
+        <div className="flex items-center gap-4">
+          <img 
+            src={logoPath} 
+            alt="Kementerian Dalam Negeri" 
+            className="h-12 w-auto object-contain"
+          />
           <div>
-            <h2 className="text-2xl font-bold text-slate-800">Dashboard Overview</h2>
-            <p className="text-sm text-slate-500">{currentDate}</p>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+              Data Kependudukan
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Sistem Manajemen Data Penduduk
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-4">
-          {/* Search Bar */}
-          <div className="relative hidden sm:block">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <i className="fas fa-search text-slate-400"></i>
-            </div>
+        {/* Search Bar */}
+        <div className="flex-1 max-w-md mx-8">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-80 pl-10 bg-slate-50 border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              placeholder="Cari user, dokumen, atau aktivitas..."
+              placeholder="Cari pengguna, dokumen, atau aktivitas..."
+              className="pl-10 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600"
+              onChange={(e) => onSearchChange?.(e.target.value)}
             />
           </div>
+        </div>
 
+        {/* Actions */}
+        <div className="flex items-center gap-4">
           {/* Notifications */}
-          <button className="relative p-2 rounded-2xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors">
-            <i className="fas fa-bell text-lg"></i>
+          <Button variant="ghost" size="sm" className="relative">
+            <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 block h-5 w-5 rounded-full bg-red-500 text-xs text-white flex items-center justify-center animate-pulse">
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+              >
                 {unreadCount}
-              </span>
+              </Badge>
             )}
-          </button>
-
-          {/* Quick Actions */}
-          <Button
-            onClick={handleAddUser}
-            className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-2xl hover:from-blue-600 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-          >
-            <i className="fas fa-plus"></i>
-            <span className="hidden sm:inline">Tambah User</span>
           </Button>
+
+          {/* User Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="flex items-center gap-2">
+                {user?.profileImageUrl ? (
+                  <img
+                    src={user.profileImageUrl}
+                    alt="Profile"
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="h-4 w-4 text-primary" />
+                  </div>
+                )}
+                <div className="text-left">
+                  <div className="font-medium text-sm">
+                    {user?.firstName || user?.lastName 
+                      ? `${user?.firstName || ''} ${user?.lastName || ''}`.trim()
+                      : user?.email || 'User'
+                    }
+                  </div>
+                  <div className="text-xs text-gray-500">Administrator</div>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end">
+              <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <User className="mr-2 h-4 w-4" />
+                <span>Profil</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Pengaturan</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <a href="/api/logout" className="flex items-center">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Keluar</span>
+                </a>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

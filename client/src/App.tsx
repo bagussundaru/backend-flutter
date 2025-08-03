@@ -12,7 +12,7 @@ import Activities from "@/pages/activities";
 import Notifications from "@/pages/notifications";
 import Reports from "@/pages/reports";
 import NotFound from "@/pages/not-found";
-import Layout from "@/components/layout";
+import { Layout } from "@/components/layout";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
