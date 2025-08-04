@@ -618,18 +618,7 @@ export class MemStorage implements IStorage {
     return newAgreement;
   }
 
-  async getUserAgreements(userId: string): Promise<Agreement[]> {
-    return Array.from(this.agreements.values()).filter(a => a.userId === userId);
-  }
 
-  async getExpiringAgreements(daysAhead = 30): Promise<Agreement[]> {
-    const now = new Date();
-    const futureDate = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
-    
-    return Array.from(this.agreements.values()).filter(agreement => 
-      agreement.endDate && agreement.endDate <= futureDate && agreement.status === "active"
-    );
-  }
 
   async updateAgreement(id: string, updates: Partial<Agreement>): Promise<Agreement | undefined> {
     const agreement = this.agreements.get(id);
@@ -723,61 +712,19 @@ export class MemStorage implements IStorage {
     return true;
   }
 
-  async getUserQuotaUsage(userId: string): Promise<QuotaUsage[]> {
-    return Array.from(this.quotaUsage.values()).filter(q => q.userId === userId);
-  }
-
   async updateQuotaUsage(userId: string, quotaType: string, amount: number): Promise<boolean> {
     const quota = Array.from(this.quotaUsage.values()).find(
       q => q.userId === userId && q.quotaType === quotaType
     );
     
     if (quota) {
-      quota.usedAmount += amount;
+      quota.usedQuota += amount;
+      quota.remainingQuota = quota.totalQuota - quota.usedQuota;
       quota.updatedAt = new Date();
       this.quotaUsage.set(quota.id, quota);
       return true;
     }
     return false;
-  }
-
-  async resetUserQuota(userId: string, quotaType: string): Promise<boolean> {
-    const quota = Array.from(this.quotaUsage.values()).find(
-      q => q.userId === userId && q.quotaType === quotaType
-    );
-    
-    if (quota) {
-      quota.usedAmount = 0;
-      quota.updatedAt = new Date();
-      this.quotaUsage.set(quota.id, quota);
-      return true;
-    }
-    return false;
-  }
-
-  // PNBP transaction management
-  async createPnbpTransaction(transaction: InsertPnbpTransaction): Promise<PnbpTransaction> {
-    const id = randomUUID();
-    const newTransaction: PnbpTransaction = {
-      id,
-      ...transaction,
-      createdAt: new Date(),
-    };
-    this.transactions.set(id, newTransaction);
-    return newTransaction;
-  }
-
-  async getUserTransactions(userId: string): Promise<PnbpTransaction[]> {
-    return Array.from(this.transactions.values()).filter(t => t.userId === userId);
-  }
-
-  async updateTransactionStatus(id: string, status: string): Promise<boolean> {
-    const transaction = this.transactions.get(id);
-    if (!transaction) return false;
-
-    transaction.status = status as any;
-    this.transactions.set(id, transaction);
-    return true;
   }
 
   // Statistics
