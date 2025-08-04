@@ -8,7 +8,7 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
-if (!process.env.REPLIT_DOMAINS) {
+if (!process.env.REPLIT_DOMAINS && process.env.NODE_ENV !== 'development') {
   throw new Error("Environment variable REPLIT_DOMAINS not provided");
 }
 
@@ -67,6 +67,25 @@ async function upsertUser(
 }
 
 export async function setupAuth(app: Express) {
+  if (process.env.NODE_ENV === 'development') {
+    // Development mode - simple auth without Replit
+    app.get("/api/login", (req, res) => {
+      // Mock user for development
+      res.json({ message: "Development mode - use mock user" });
+    });
+
+    app.get("/api/callback", (req, res) => {
+      res.redirect("/");
+    });
+
+    app.get("/api/logout", (req, res) => {
+      res.redirect("/");
+    });
+
+    return;
+  }
+
+  // Production mode - Replit auth
   app.set("trust proxy", 1);
   app.use(getSession());
   app.use(passport.initialize());
@@ -128,6 +147,11 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  if (process.env.NODE_ENV === 'development') {
+    // Skip auth in development mode
+    return next();
+  }
+
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {

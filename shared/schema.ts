@@ -48,8 +48,53 @@ export const documents = pgTable("documents", {
   uploadedBy: varchar("uploaded_by").references(() => users.id),
   status: varchar("status").default("pending"), // pending, approved, rejected
   category: varchar("category").notNull(), // PKS, Juknis, POC
+  expirationDate: timestamp("expiration_date"),
+  isActive: boolean("is_active").default(true),
+  version: varchar("version").default("1.0"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Table for managing PKS, Juknis, POC agreements
+export const agreements = pgTable("agreements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  documentId: varchar("document_id").references(() => documents.id),
+  type: varchar("type").notNull(), // PKS, Juknis, POC
+  agreementNumber: varchar("agreement_number"),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  status: varchar("status").default("active"), // active, expired, pending_renewal
+  renewalRequested: boolean("renewal_requested").default(false),
+  renewalRequestDate: timestamp("renewal_request_date"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Table for quota monitoring and PNBP transactions
+export const quotaUsage = pgTable("quota_usage", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  quotaType: varchar("quota_type").notNull(), // access, download, api_calls
+  usedAmount: integer("used_amount").default(0),
+  totalQuota: integer("total_quota").notNull(),
+  period: varchar("period").default("monthly"), // daily, monthly, yearly
+  resetDate: timestamp("reset_date"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Table for PNBP transactions
+export const pnbpTransactions = pgTable("pnbp_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  transactionId: varchar("transaction_id").unique(),
+  amount: integer("amount").notNull(),
+  description: text("description"),
+  status: varchar("status").default("pending"), // pending, completed, failed
+  paymentMethod: varchar("payment_method"),
+  transactionDate: timestamp("transaction_date").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const activities = pgTable("activities", {
@@ -117,6 +162,23 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
   createdAt: true,
 });
 
+export const insertAgreementSchema = createInsertSchema(agreements).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertQuotaUsageSchema = createInsertSchema(quotaUsage).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPnbpTransactionSchema = createInsertSchema(pnbpTransactions).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -128,3 +190,9 @@ export type InsertRequest = z.infer<typeof insertRequestSchema>;
 export type Request = typeof requests.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
+export type InsertAgreement = z.infer<typeof insertAgreementSchema>;
+export type Agreement = typeof agreements.$inferSelect;
+export type InsertQuotaUsage = z.infer<typeof insertQuotaUsageSchema>;
+export type QuotaUsage = typeof quotaUsage.$inferSelect;
+export type InsertPnbpTransaction = z.infer<typeof insertPnbpTransactionSchema>;
+export type PnbpTransaction = typeof pnbpTransactions.$inferSelect;

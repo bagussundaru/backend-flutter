@@ -13,6 +13,8 @@ import Notifications from "@/pages/notifications";
 import Reports from "@/pages/reports";
 import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout";
+import Agreements from "@/pages/agreements";
+import QuotaMonitoring from "@/pages/quota-monitoring";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -29,6 +31,8 @@ function Router() {
           <Route path="/activities" component={Activities} />
           <Route path="/notifications" component={Notifications} />
           <Route path="/reports" component={Reports} />
+          <Route path="/agreements" component={Agreements} />
+          <Route path="/quota-monitoring" component={QuotaMonitoring} />
         </Layout>
       )}
       <Route component={NotFound} />

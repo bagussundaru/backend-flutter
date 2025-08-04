@@ -7,7 +7,10 @@ import {
   BarChart3, 
   Settings,
   LogOut,
-  User
+  User,
+  FileCheck,
+  Zap,
+  CreditCard
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -19,6 +22,8 @@ import logoPath from "@assets/image_1754216364556.png";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
+  { name: "PKS/Juknis/POC", href: "/agreements", icon: FileCheck },
+  { name: "Monitoring Kuota", href: "/quota-monitoring", icon: Zap },
   { name: "Pengguna", href: "/users", icon: Users },
   { name: "Dokumen", href: "/documents", icon: FileText },
   { name: "Aktivitas", href: "/activities", icon: Activity },

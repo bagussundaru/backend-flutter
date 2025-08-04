@@ -1,6 +1,22 @@
 # Overview
 
-This is a full-stack web application for managing demographic data (DataKependudukan) with an admin dashboard. The application provides comprehensive user management, document handling, activity monitoring, and notification systems. Built with a modern React frontend and Express.js backend, it uses PostgreSQL for data persistence and integrates with Replit's authentication system.
+This is a comprehensive Indonesian government population data management system (DataKependudukan) that supports the complete business process workflow including mobile app user management, document collaboration (PKS/Juknis/POC), quota monitoring, and administrative oversight. The system features a professional web dashboard with Indonesian government branding and supports the full lifecycle from user registration to document management and reporting.
+
+## Business Process Integration
+- **User Registration & Account Activation**: Complete workflow for mobile app user onboarding with status tracking
+- **PKS/Juknis/POC Document Management**: Specialized agreement management for Perjanjian Kerja Sama, Petunjuk Teknis, and Proof of Concept documents with expiration tracking and renewal workflows
+- **Real-time Quota Monitoring**: Advanced quota tracking system with usage alerts, automatic resets, and threshold management
+- **PNBP Transaction Processing**: Complete transaction lifecycle management for Penerimaan Negara Bukan Pajak with status tracking and reporting
+- **Interactive Notification System**: Comprehensive alert system for document expiration, quota limits, and system updates
+- **Admin Dashboard**: Full administrative control with user monitoring, document approval workflows, and broadcast messaging
+- **Mobile App Integration**: Backend API support for mobile application synchronization and data exchange
+
+## Recent Enhancements (August 2025)
+- Enhanced database schema with specialized tables for agreements, quota usage, and PNBP transactions
+- Implemented comprehensive PKS/Juknis/POC management workflow with renewal processes
+- Added real-time quota monitoring with usage alerts and automatic reset capabilities
+- Created PNBP transaction tracking system with status management
+- Built specialized user interfaces for agreement management and quota monitoring
 
 # User Preferences
 

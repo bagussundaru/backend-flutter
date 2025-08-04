@@ -14,6 +14,14 @@ const upload = multer({
   },
 });
 
+// Helper to get consistent user ID in both dev and prod
+function getUserId(req: any): string {
+  if (process.env.NODE_ENV === 'development') {
+    return "admin-123";
+  }
+  return req.user.claims.sub;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
@@ -21,7 +29,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -81,7 +89,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/activities', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const activityData = { ...req.body, userId };
       const activity = await storage.createActivity(activityData);
       res.json(activity);
@@ -108,7 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const { title, description, category } = req.body;
 
       const documentData = {
@@ -192,7 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/requests', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const requestData = insertRequestSchema.parse({ ...req.body, userId });
       const request = await storage.createRequest(requestData);
       
@@ -214,7 +222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/requests/:id', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const updates = req.body;
       
       if (updates.status) {
@@ -258,7 +266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/notifications', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const notificationData = insertNotificationSchema.parse({ ...req.body, sentBy: userId });
       const notification = await storage.createNotification(notificationData);
       
@@ -288,6 +296,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error marking notification as read:", error);
       res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  // Agreement routes (PKS, Juknis, POC)
+  app.get('/api/agreements', isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const agreements = await storage.getUserAgreements(userId);
+      res.json(agreements);
+    } catch (error) {
+      console.error("Error fetching agreements:", error);
+      res.status(500).json({ message: "Failed to fetch agreements" });
+    }
+  });
+
+  app.get('/api/agreements/expiring', isAuthenticated, async (req, res) => {
+    try {
+      const daysAhead = req.query.days ? parseInt(req.query.days as string) : 30;
+      const agreements = await storage.getExpiringAgreements(daysAhead);
+      res.json(agreements);
+    } catch (error) {
+      console.error("Error fetching expiring agreements:", error);
+      res.status(500).json({ message: "Failed to fetch expiring agreements" });
+    }
+  });
+
+  app.post('/api/agreements', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const agreementData = { ...req.body, userId };
+      const agreement = await storage.createAgreement(agreementData);
+      res.json(agreement);
+    } catch (error) {
+      console.error("Error creating agreement:", error);
+      res.status(500).json({ message: "Failed to create agreement" });
+    }
+  });
+
+  app.post('/api/agreements/:id/renewal', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.requestAgreementRenewal(id);
+      if (!success) {
+        return res.status(404).json({ message: "Agreement not found" });
+      }
+      res.json({ message: "Renewal request submitted successfully" });
+    } catch (error) {
+      console.error("Error requesting renewal:", error);
+      res.status(500).json({ message: "Failed to request renewal" });
+    }
+  });
+
+  // Quota management routes
+  app.get('/api/quota-usage', isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const quotaUsage = await storage.getUserQuotaUsage(userId);
+      res.json(quotaUsage);
+    } catch (error) {
+      console.error("Error fetching quota usage:", error);
+      res.status(500).json({ message: "Failed to fetch quota usage" });
+    }
+  });
+
+  app.get('/api/quota-stats', isAuthenticated, async (req, res) => {
+    try {
+      const stats = {
+        totalUsers: (await storage.getAllUsers()).length,
+        totalQuotaUsage: (await storage.getUserQuotaUsage("admin-123")).reduce((sum, q) => sum + q.usedQuota, 0),
+        activeQuotas: (await storage.getUserQuotaUsage("admin-123")).filter(q => q.remainingQuota > 0).length,
+        expiredQuotas: (await storage.getUserQuotaUsage("admin-123")).filter(q => q.remainingQuota <= 0).length,
+      };
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching quota stats:", error);
+      res.status(500).json({ message: "Failed to fetch quota stats" });
+    }
+  });
+
+  app.post('/api/quota-usage/:userId/reset', isAuthenticated, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { quotaType } = req.body;
+      const success = await storage.resetUserQuota(userId, quotaType);
+      if (!success) {
+        return res.status(404).json({ message: "Quota not found" });
+      }
+      res.json({ message: "Quota reset successfully" });
+    } catch (error) {
+      console.error("Error resetting quota:", error);
+      res.status(500).json({ message: "Failed to reset quota" });
+    }
+  });
+
+  // PNBP transaction routes
+  app.get('/api/pnbp-transactions', isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const transactions = await storage.getUserTransactions(userId);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching PNBP transactions:", error);
+      res.status(500).json({ message: "Failed to fetch PNBP transactions" });
+    }
+  });
+
+  app.patch('/api/pnbp-transactions/:id/status', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      const success = await storage.updateTransactionStatus(id, status);
+      if (!success) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+      res.json({ message: "Transaction status updated successfully" });
+    } catch (error) {
+      console.error("Error updating transaction status:", error);
+      res.status(500).json({ message: "Failed to update transaction status" });
     }
   });
 
